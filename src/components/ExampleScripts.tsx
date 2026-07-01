@@ -1,4 +1,10 @@
-import type { Audience, HookLanguage, Intensity, Tone } from '../types/hooks';
+import type {
+  Audience,
+  HookLanguage,
+  HookWindow,
+  Intensity,
+  Tone,
+} from '../types/hooks';
 
 export interface ExampleScript {
   category: 'FITNESS' | 'BUSINESS' | 'PERSONAL STORY';
@@ -8,6 +14,7 @@ export interface ExampleScript {
     audience: Audience;
     intensity: Intensity;
     language: HookLanguage;
+    hookWindow: HookWindow;
   };
 }
 
@@ -21,6 +28,7 @@ const exampleScripts: ExampleScript[] = [
       audience: 'Fitness',
       intensity: 'Sharp',
       language: 'English',
+      hookWindow: 5,
     },
   },
   {
@@ -32,6 +40,7 @@ const exampleScripts: ExampleScript[] = [
       audience: 'Business',
       intensity: 'Sharp',
       language: 'Hinglish',
+      hookWindow: 8,
     },
   },
   {
@@ -43,6 +52,7 @@ const exampleScripts: ExampleScript[] = [
       audience: 'Beginners',
       intensity: 'Safe',
       language: 'Hinglish',
+      hookWindow: 5,
     },
   },
 ];
