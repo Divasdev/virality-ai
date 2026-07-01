@@ -5,6 +5,9 @@ import type {
   HookScores,
   RewriteHookRequest,
   RewriteHookResponse,
+  RoastCritique,
+  CompareHooksResponse,
+  CompareAnalysis,
 } from '../types/hooks';
 
 export class HookLabApiError extends Error {
@@ -45,7 +48,7 @@ const isHookResult = (value: unknown): value is HookResult => {
     typeof value.framework === 'string' &&
     typeof value.text === 'string' &&
     typeof value.why === 'string' &&
-    value.timecode === '00:00–00:05' &&
+    (value.timecode === '00:00–00:05' || value.timecode === '00:00–00:08') &&
     isHookScores(value.scores) &&
     typeof value.best_pick === 'boolean'
   );
@@ -65,16 +68,86 @@ const isRewriteHookResponse = (
   );
 };
 
+const isRoastCritique = (value: unknown): value is RoastCritique => {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.grade === 'string' &&
+    Array.isArray(value.bullets) &&
+    value.bullets.length >= 4 &&
+    value.bullets.length <= 6 &&
+    value.bullets.every(
+      (bullet: unknown) => typeof bullet === 'string' && bullet.length > 0,
+    ) &&
+    typeof value.biggest_fix === 'string' &&
+    value.biggest_fix.length > 0
+  );
+};
+
+const isCompareAnalysis = (value: unknown): value is CompareAnalysis => {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    (value.winner === 'A' || value.winner === 'B') &&
+    typeof value.reason === 'string' &&
+    value.reason.length > 0
+  );
+};
+
+const isCompareHooksResponse = (
+  value: unknown,
+): value is CompareHooksResponse => {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (value.winner !== 'A' && value.winner !== 'B') {
+    return false;
+  }
+
+  if (!isRecord(value.analysis)) {
+    return false;
+  }
+
+  return (
+    typeof value.confidence === 'number' &&
+    typeof value.summary === 'string' &&
+    typeof value.improvedHook === 'string' &&
+    isCompareAnalysis(value.analysis.clarity) &&
+    isCompareAnalysis(value.analysis.curiosity) &&
+    isCompareAnalysis(value.analysis.emotion) &&
+    isCompareAnalysis(value.analysis.retention)
+  );
+};
+
 const parseGenerateHooksResponse = (value: unknown): GenerateHooksResponse => {
   if (!isRecord(value)) {
     throw new Error('Invalid response shape.');
+  }
+
+  if (value.mode === 'compare') {
+    if (isCompareHooksResponse(value.compare)) {
+      return { mode: 'compare', compare: value.compare };
+    }
+    throw new Error('Invalid compare payload.');
   }
 
   if (!Array.isArray(value.hooks) || !value.hooks.every(isHookResult)) {
     throw new Error('Invalid hooks payload.');
   }
 
-  return { hooks: value.hooks };
+  if (value.mode === 'roast') {
+    if (value.roast !== undefined && isRoastCritique(value.roast)) {
+      return { mode: 'roast', hooks: value.hooks, roast: value.roast };
+    }
+    throw new Error('Invalid roast payload.');
+  }
+
+  return { mode: 'generate', hooks: value.hooks };
 };
 
 const parseErrorMessage = (value: unknown): string | null => {
