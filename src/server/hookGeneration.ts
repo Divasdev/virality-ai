@@ -844,6 +844,16 @@ const extractGeminiText = (
   return text.length > 0 ? text : null;
 };
 
+class GeminiApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'GeminiApiError';
+  }
+}
+
 const callGemini = async (
   apiKey: string,
   systemPrompt: string,
@@ -879,7 +889,21 @@ const callGemini = async (
   );
 
   if (!response.ok) {
-    return null;
+    let errMsg = 'Gemini API error';
+    try {
+      const errPayload = (await response.json()) as Record<string, unknown>;
+      if (
+        errPayload &&
+        typeof errPayload.error === 'object' &&
+        errPayload.error !== null &&
+        typeof (errPayload.error as Record<string, unknown>).message === 'string'
+      ) {
+        errMsg = (errPayload.error as Record<string, unknown>).message as string;
+      }
+    } catch {
+      // ignore
+    }
+    throw new GeminiApiError(response.status, errMsg);
   }
 
   const payload = (await response.json()) as GeminiGenerateContentResponse;
@@ -915,58 +939,102 @@ export const createGenerateHooksResponse = async ({
 
   try {
     let generatedHooks: GenerateHooksResponse | null = null;
+    let geminiError: { status: number; message: string } | null = null;
 
     if (request.mode === 'compare') {
       for (let attempt = 0; attempt < 2; attempt += 1) {
-        const text = await callGemini(
-          apiKey,
-          buildCompareSystemPrompt(request),
-          buildCompareUserPrompt(request, attempt > 0),
-        );
-        const parsedCompare = text ? parseComparePayload(text) : null;
+        try {
+          const text = await callGemini(
+            apiKey,
+            buildCompareSystemPrompt(request),
+            buildCompareUserPrompt(request, attempt > 0),
+          );
+          const parsedCompare = text ? parseComparePayload(text) : null;
 
-        if (parsedCompare) {
-          // Compare doesn't rewrite 10 hooks or need the strict topic extraction grounding check in the same way,
-          // but the improved hook should ideally be on topic. Since there is no "hooks" array, we skip `isGenerationGrounded`.
-          generatedHooks = { mode: 'compare', compare: parsedCompare };
-          break;
+          if (parsedCompare) {
+            generatedHooks = { mode: 'compare', compare: parsedCompare };
+            break;
+          }
+        } catch (err) {
+          if (err instanceof GeminiApiError) {
+            geminiError = { status: err.status, message: err.message };
+            if (err.status === 429) {
+              break;
+            }
+          } else {
+            throw err;
+          }
         }
       }
     } else if (request.mode === 'roast') {
       for (let attempt = 0; attempt < 2; attempt += 1) {
-        const text = await callGemini(
-          apiKey,
-          buildRoastSystemPrompt(request),
-          buildRoastUserPrompt(request, attempt > 0),
-        );
-        const parsedRoast = text
-          ? parseRoastPayload(text, hookWindowTimecodes[request.hookWindow])
-          : null;
+        try {
+          const text = await callGemini(
+            apiKey,
+            buildRoastSystemPrompt(request),
+            buildRoastUserPrompt(request, attempt > 0),
+          );
+          const parsedRoast = text
+            ? parseRoastPayload(text, hookWindowTimecodes[request.hookWindow])
+            : null;
 
-        if (parsedRoast && isGenerationGrounded(request, { mode: 'roast', hooks: parsedRoast.hooks, roast: parsedRoast.roast })) {
-          generatedHooks = { mode: 'roast', hooks: parsedRoast.hooks, roast: parsedRoast.roast };
-          break;
+          if (parsedRoast && isGenerationGrounded(request, { mode: 'roast', hooks: parsedRoast.hooks, roast: parsedRoast.roast })) {
+            generatedHooks = { mode: 'roast', hooks: parsedRoast.hooks, roast: parsedRoast.roast };
+            break;
+          }
+        } catch (err) {
+          if (err instanceof GeminiApiError) {
+            geminiError = { status: err.status, message: err.message };
+            if (err.status === 429) {
+              break;
+            }
+          } else {
+            throw err;
+          }
         }
       }
     } else {
       for (let attempt = 0; attempt < 2; attempt += 1) {
-        const text = await callGemini(
-          apiKey,
-          buildGenerateSystemPrompt(request),
-          buildGenerateUserPrompt(request, attempt > 0),
-        );
-        const parsedHooks = text
-          ? parseHooksPayload(text, hookWindowTimecodes[request.hookWindow])
-          : null;
+        try {
+          const text = await callGemini(
+            apiKey,
+            buildGenerateSystemPrompt(request),
+            buildGenerateUserPrompt(request, attempt > 0),
+          );
+          const parsedHooks = text
+            ? parseHooksPayload(text, hookWindowTimecodes[request.hookWindow])
+            : null;
 
-        if (parsedHooks && isGenerationGrounded(request, { mode: 'generate', hooks: parsedHooks.hooks })) {
-          generatedHooks = { mode: 'generate', hooks: parsedHooks.hooks };
-          break;
+          if (parsedHooks && isGenerationGrounded(request, { mode: 'generate', hooks: parsedHooks.hooks })) {
+            generatedHooks = { mode: 'generate', hooks: parsedHooks.hooks };
+            break;
+          }
+        } catch (err) {
+          if (err instanceof GeminiApiError) {
+            geminiError = { status: err.status, message: err.message };
+            if (err.status === 429) {
+              break;
+            }
+          } else {
+            throw err;
+          }
         }
       }
     }
 
     if (!generatedHooks) {
+      if (geminiError) {
+        if (geminiError.status === 429) {
+          return {
+            status: 429,
+            payload: { error: 'Gemini API rate limit exceeded. Please wait a minute and try again.' },
+          };
+        }
+        return {
+          status: geminiError.status === 400 ? 400 : 502,
+          payload: { error: geminiError.message || 'Something went wrong on our end. Try again.' },
+        };
+      }
       return {
         status: 502,
         payload: { error: 'Something went wrong on our end. Try again.' },
@@ -1023,7 +1091,19 @@ export const createRewriteHookResponse = async ({
     }
 
     return { status: 200, payload: rewrittenHook };
-  } catch {
+  } catch (err) {
+    if (err instanceof GeminiApiError) {
+      if (err.status === 429) {
+        return {
+          status: 429,
+          payload: { error: 'Gemini API rate limit exceeded. Please wait a minute and try again.' },
+        };
+      }
+      return {
+        status: err.status === 400 ? 400 : 502,
+        payload: { error: err.message || 'Something went wrong on our end. Try again.' },
+      };
+    }
     return {
       status: 502,
       payload: { error: 'Something went wrong on our end. Try again.' },
