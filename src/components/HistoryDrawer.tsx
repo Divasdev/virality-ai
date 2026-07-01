@@ -118,8 +118,18 @@ export function HistoryDrawer({
                       <span className="rounded-[3px] border border-amber/30 bg-amber/10 px-1.5 py-0.5 font-mono text-[10px] text-amber">
                         {entry.platform}
                       </span>
+                      {entry.mode === 'roast' ? (
+                        <span className="rounded-[3px] border border-red-500/30 bg-red-500/10 px-1.5 py-0.5 font-mono text-[10px] text-red-400">
+                          Roast
+                        </span>
+                      ) : entry.mode === 'compare' ? (
+                        <span className="rounded-[3px] border border-cyan/30 bg-cyan/10 px-1.5 py-0.5 font-mono text-[10px] text-cyan">
+                          Compare
+                        </span>
+                      ) : null}
                     </div>
                     <p className="mt-2 text-sm leading-5 text-primary">
+                      {entry.mode === 'compare' ? 'A/B Test: ' : ''}
                       {entry.script.slice(0, 60)}
                       {entry.script.length > 60 ? '...' : ''}
                     </p>
