@@ -4,6 +4,8 @@ import type {
   GenerateHooksRequest,
   HistoryEntry,
   HookResult,
+  RoastCritique,
+  CompareHooksResponse,
 } from '../types/hooks';
 
 const historyKey = 'hooklab_history';
@@ -25,8 +27,17 @@ const isHistoryEntry = (value: unknown): value is HistoryEntry => {
     typeof record.audience === 'string' &&
     typeof record.intensity === 'string' &&
     typeof record.language === 'string' &&
-    Array.isArray(record.hooks)
+    typeof record.hookWindow === 'number' &&
+    (record.mode === 'compare' || Array.isArray(record.hooks))
   );
+};
+
+const normalizeHistoryEntry = (entry: HistoryEntry): HistoryEntry => {
+  if (!entry.mode) {
+    return { ...entry, mode: 'generate' };
+  }
+
+  return entry;
 };
 
 const readHistory = (): HistoryEntry[] => {
@@ -39,7 +50,9 @@ const readHistory = (): HistoryEntry[] => {
 
     const parsed = JSON.parse(raw) as unknown;
 
-    return Array.isArray(parsed) ? parsed.filter(isHistoryEntry) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter(isHistoryEntry).map(normalizeHistoryEntry)
+      : [];
   } catch {
     return [];
   }
@@ -65,7 +78,12 @@ export function useHistory() {
   }, []);
 
   const saveEntry = useCallback(
-    (request: GenerateHooksRequest, hooks: HookResult[]) => {
+    (
+      request: GenerateHooksRequest,
+      hooks?: HookResult[],
+      roast?: RoastCritique,
+      compare?: CompareHooksResponse,
+    ) => {
       setEntries((currentEntries) => {
         const nextEntries = [
           {
@@ -73,6 +91,8 @@ export function useHistory() {
             timestamp: Date.now(),
             ...request,
             hooks,
+            roast,
+            compare,
           },
           ...currentEntries,
         ].slice(0, maxHistoryEntries);
