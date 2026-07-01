@@ -11,7 +11,7 @@ export interface ExampleScript {
   };
 }
 
-export const exampleScripts: ExampleScript[] = [
+const exampleScripts: ExampleScript[] = [
   {
     category: 'FITNESS',
     script:

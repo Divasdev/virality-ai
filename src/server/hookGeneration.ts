@@ -20,6 +20,7 @@ import {
   type RewriteHookResponse,
   type Tone,
 } from '../types/hooks';
+import { extractTopicAnchors, isGenerationGrounded } from './relevance';
 
 interface GeminiGenerateContentResponse {
   candidates?: Array<{
@@ -347,7 +348,8 @@ const audienceDirections: Record<Audience, string> = {
 
 const intensityDirections: Record<Intensity, string> = {
   Safe: 'Keep the hook credible and restrained. No manufactured drama.',
-  Sharp: 'Use stronger tension and more decisive language while staying believable.',
+  Sharp:
+    'Use stronger tension and more decisive language while staying believable.',
   Aggressive:
     'Push the hook harder with urgency, stakes, and blunt contrast. Do not invent facts.',
 };
@@ -366,6 +368,17 @@ const buildGenerateSystemPrompt = (request: GenerateHooksRequest): string =>
 You are Hook Lab, a senior short-form video editor and retention strategist.
 Your job is to help the creator decide which first-five-seconds hook to use.
 
+CRITICAL SOURCE-GROUNDING RULE:
+You are rewriting the user's SOURCE SCRIPT. The SOURCE SCRIPT is the only source of truth.
+Every hook must preserve the script's exact topic, niche, facts, intent, and core claim.
+Never switch to generic creator advice, social media advice, editing advice, or another niche unless that is explicitly what the SOURCE SCRIPT is about.
+If the SOURCE SCRIPT is about aviation, every output must stay about aviation.
+If the SOURCE SCRIPT is about engine failure and pilots, every output must remain about engine failure, pilots, passenger fear, or airliner safety.
+Do not invent new subject matter, fake statistics, fake outcomes, or unrelated examples.
+Do not add numbers, percentages, time spans, certifications, rankings, or measurable claims that are not in the SOURCE SCRIPT.
+If a framework such as STAT SHOCK needs a statistic but the SOURCE SCRIPT has no statistic, use the most concrete factual contrast already present instead.
+Do not write hooks about Reels, TikTok, creators, posting, views, editing, or content unless those ideas appear in the SOURCE SCRIPT.
+
 Platform: ${request.platform}
 Tone: ${request.tone}
 Audience: ${request.audience}
@@ -377,6 +390,7 @@ Tone direction: ${toneDirections[request.tone]}
 Audience direction: ${audienceDirections[request.audience]}
 Intensity direction: ${intensityDirections[request.intensity]}
 Language direction: ${languageDirections[request.language]}
+Source-topic anchors to preserve where natural: ${extractTopicAnchors(request.script).join(', ')}
 
 Return strict JSON only. No markdown fences, no preamble, no commentary.
 Return exactly this shape:
@@ -403,11 +417,30 @@ Rules:
 - Use each framework exactly once: ${hookFrameworks.join(', ')}.
 - Set exactly one item to "best_pick": true. Pick the strongest default choice for ${request.platform}.
 - Keep every hook short enough to say inside five seconds.
+- Every hook must clearly be a rewrite of the SOURCE SCRIPT, not a generic hook template.
+- Every hook should include at least one concrete source-specific noun, entity, or fact when natural.
+- Do not add unsupported numeric claims. Reuse only numbers/facts already present in the SOURCE SCRIPT.
 - The timecode must always be "00:00–00:05".
 - "why" must be 1-2 short sentences explaining the attention mechanism, not generic praise.
 - Scores must be integers from 0 to 100.
 - Score curiosity by unanswered tension, clarity by instant understanding, scroll_stop by pause power, and platform_fit by pacing match.
 - Do not include quotation marks around the spoken hook unless the line itself needs them.
+`.trim();
+
+const buildGenerateUserPrompt = (
+  request: GenerateHooksRequest,
+  retry = false,
+): string =>
+  `
+${retry ? 'The previous output drifted off-topic and was rejected. Regenerate from the source only.' : ''}
+SOURCE SCRIPT:
+"""
+${request.script}
+"""
+
+Task:
+Rewrite the opening 5 seconds of this exact SOURCE SCRIPT into the 10 required hook frameworks.
+Preserve the same topic and facts. Do not change the niche.
 `.trim();
 
 const buildRewriteSystemPrompt = (request: RewriteHookRequest): string =>
@@ -522,12 +555,21 @@ export const createGenerateHooksResponse = async ({
   }
 
   try {
-    const text = await callGemini(
-      apiKey,
-      buildGenerateSystemPrompt(request),
-      request.script,
-    );
-    const generatedHooks = text ? parseHooksPayload(text) : null;
+    let generatedHooks: GenerateHooksResponse | null = null;
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const text = await callGemini(
+        apiKey,
+        buildGenerateSystemPrompt(request),
+        buildGenerateUserPrompt(request, attempt > 0),
+      );
+      const parsedHooks = text ? parseHooksPayload(text) : null;
+
+      if (parsedHooks && isGenerationGrounded(request, parsedHooks)) {
+        generatedHooks = parsedHooks;
+        break;
+      }
+    }
 
     if (!generatedHooks) {
       return {

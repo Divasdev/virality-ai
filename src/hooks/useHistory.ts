@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { GenerateHooksRequest, HistoryEntry, HookResult } from '../types/hooks';
+import type {
+  GenerateHooksRequest,
+  HistoryEntry,
+  HookResult,
+} from '../types/hooks';
 
 const historyKey = 'hooklab_history';
 const maxHistoryEntries = 20;

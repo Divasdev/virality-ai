@@ -51,7 +51,9 @@ const isHookResult = (value: unknown): value is HookResult => {
   );
 };
 
-const isRewriteHookResponse = (value: unknown): value is RewriteHookResponse => {
+const isRewriteHookResponse = (
+  value: unknown,
+): value is RewriteHookResponse => {
   if (!isRecord(value)) {
     return false;
   }
@@ -108,7 +110,10 @@ const throwApiError = (status: number, payload: unknown): never => {
     );
   }
 
-  throw new HookLabApiError('Something went wrong on our end. Try again.', status);
+  throw new HookLabApiError(
+    'Something went wrong on our end. Try again.',
+    status,
+  );
 };
 
 export const generateHooks = async (
@@ -145,7 +150,10 @@ export const rewriteHook = async (
   }
 
   if (!isRewriteHookResponse(payload)) {
-    throw new HookLabApiError('Something went wrong on our end. Try again.', 500);
+    throw new HookLabApiError(
+      'Something went wrong on our end. Try again.',
+      500,
+    );
   }
 
   return payload;

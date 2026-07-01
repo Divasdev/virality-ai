@@ -1,7 +1,7 @@
 import type { GenerateHooksRequest, HookResult } from '../types/hooks';
 
 const csvEscape = (value: string | number): string =>
-  `"${String(value).replaceAll('"', '""')}"`;
+  `"${String(value).replace(/"/g, '""')}"`;
 
 export const buildHooksPlainText = (hooks: HookResult[]): string =>
   hooks

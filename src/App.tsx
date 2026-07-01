@@ -1,55 +1,217 @@
-import { Scissors } from 'lucide-react';
+import { Clock3, Scissors } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { ControlsPanel } from './components/ControlsPanel';
 import { EmptyState } from './components/EmptyState';
+import { type ExampleScript } from './components/ExampleScripts';
+import { ExportBar } from './components/ExportBar';
+import { HistoryDrawer } from './components/HistoryDrawer';
 import { HookCard } from './components/HookCard';
 import { PlatformSelector } from './components/PlatformSelector';
 import { ScriptInput } from './components/ScriptInput';
 import { SkeletonCard } from './components/SkeletonCard';
-import { generateHooks } from './services/hooksApi';
-import type { HookResult, Platform } from './types/hooks';
+import { useHistory } from './hooks/useHistory';
+import {
+  generateHooks,
+  HookLabApiError,
+  rewriteHook,
+} from './services/hooksApi';
+import type {
+  Audience,
+  GenerateHooksRequest,
+  HistoryEntry,
+  HookLanguage,
+  HookResult,
+  Intensity,
+  Platform,
+  RewriteDirection,
+  Tone,
+} from './types/hooks';
 
 const skeletonItems = Array.from({ length: 10 }, (_, index) => index);
 
 function App() {
   const [script, setScript] = useState('');
   const [platform, setPlatform] = useState<Platform>('YouTube Shorts');
+  const [tone, setTone] = useState<Tone>('Punchy');
+  const [audience, setAudience] = useState<Audience>('Creators');
+  const [intensity, setIntensity] = useState<Intensity>('Sharp');
+  const [language, setLanguage] = useState<HookLanguage>('English');
   const [hooks, setHooks] = useState<HookResult[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [previousHooks, setPreviousHooks] = useState<
+    Partial<Record<HookResult['framework'], HookResult>>
+  >({});
+  const [currentRequest, setCurrentRequest] =
+    useState<GenerateHooksRequest | null>(null);
+  const [inputError, setInputError] = useState<string | null>(null);
+  const [surfaceError, setSurfaceError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [rewritingFramework, setRewritingFramework] = useState<
+    HookResult['framework'] | null
+  >(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const { entries, saveEntry, deleteEntry, clearEntries } = useHistory();
 
   const canSubmit = useMemo(
-    () => script.trim().length >= 10 && !isLoading,
+    () =>
+      script.trim().length >= 20 && script.trim().length <= 3000 && !isLoading,
     [script, isLoading],
   );
 
+  const sortedHooks = useMemo(
+    () =>
+      [...hooks].sort((first, second) => {
+        if (first.best_pick === second.best_pick) {
+          return 0;
+        }
+
+        return first.best_pick ? -1 : 1;
+      }),
+    [hooks],
+  );
+
+  const buildRequest = (): GenerateHooksRequest => ({
+    script: script.trim(),
+    platform,
+    tone,
+    audience,
+    intensity,
+    language,
+  });
+
+  const handleError = (caughtError: unknown): void => {
+    if (caughtError instanceof HookLabApiError) {
+      if (caughtError.status === 400) {
+        setInputError(caughtError.message);
+        return;
+      }
+
+      setSurfaceError(caughtError.message);
+      return;
+    }
+
+    setSurfaceError('Something went wrong on our end. Try again.');
+  };
+
   const cutHooks = async (): Promise<void> => {
+    const request = buildRequest();
+
     if (!canSubmit) {
+      setInputError('Script must be between 20 and 3000 characters.');
       return;
     }
 
     setIsLoading(true);
-    setError(null);
+    setInputError(null);
+    setSurfaceError(null);
+    setPreviousHooks({});
 
     try {
-      const response = await generateHooks({ script, platform });
+      const response = await generateHooks(request);
+
       setHooks(response.hooks);
+      setCurrentRequest(request);
+      saveEntry(request, response.hooks);
     } catch (caughtError) {
       setHooks([]);
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Couldn't cut those hooks. Try again.",
-      );
+      handleError(caughtError);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const rewriteCard = async (
+    hook: HookResult,
+    direction: RewriteDirection,
+  ): Promise<void> => {
+    setSurfaceError(null);
+    setRewritingFramework(hook.framework);
+
+    try {
+      const rewritten = await rewriteHook({
+        hook: hook.text,
+        framework: hook.framework,
+        direction,
+        platform,
+      });
+
+      setPreviousHooks((currentPreviousHooks) => ({
+        ...currentPreviousHooks,
+        [hook.framework]: currentPreviousHooks[hook.framework] ?? hook,
+      }));
+      setHooks((currentHooks) =>
+        currentHooks.map((currentHook) =>
+          currentHook.framework === hook.framework
+            ? {
+                ...currentHook,
+                text: rewritten.text,
+                why: rewritten.why,
+                scores: rewritten.scores,
+              }
+            : currentHook,
+        ),
+      );
+    } catch (caughtError) {
+      handleError(caughtError);
+    } finally {
+      setRewritingFramework(null);
+    }
+  };
+
+  const undoRewrite = (hook: HookResult): void => {
+    const previousHook = previousHooks[hook.framework];
+
+    if (!previousHook) {
+      return;
+    }
+
+    setHooks((currentHooks) =>
+      currentHooks.map((currentHook) =>
+        currentHook.framework === hook.framework ? previousHook : currentHook,
+      ),
+    );
+    setPreviousHooks((currentPreviousHooks) => {
+      const nextPreviousHooks = { ...currentPreviousHooks };
+
+      delete nextPreviousHooks[hook.framework];
+      return nextPreviousHooks;
+    });
+  };
+
+  const restoreHistoryEntry = (entry: HistoryEntry): void => {
+    setScript(entry.script);
+    setPlatform(entry.platform);
+    setTone(entry.tone);
+    setAudience(entry.audience);
+    setIntensity(entry.intensity);
+    setLanguage(entry.language);
+    setHooks(entry.hooks);
+    setCurrentRequest({
+      script: entry.script,
+      platform: entry.platform,
+      tone: entry.tone,
+      audience: entry.audience,
+      intensity: entry.intensity,
+      language: entry.language,
+    });
+    setInputError(null);
+    setSurfaceError(null);
+    setPreviousHooks({});
+  };
+
+  const selectExample = (example: ExampleScript): void => {
+    setScript(example.script);
+    setTone(example.defaults.tone);
+    setAudience(example.defaults.audience);
+    setIntensity(example.defaults.intensity);
+    setLanguage(example.defaults.language);
+    setInputError(null);
+  };
+
   return (
     <main className="min-h-screen bg-bg text-primary">
       <div className="mx-auto flex min-h-screen w-full max-w-[1720px] flex-col px-4 py-5 sm:px-6 lg:px-8">
-        <header className="grid gap-6 border-b border-white/10 pb-6 lg:grid-cols-[1fr_auto] lg:items-end">
+        <header className="grid gap-6 border-b border-white/10 pb-6 lg:grid-cols-[1fr_auto_auto] lg:items-end">
           <div>
             <p className="mb-3 font-mono text-xs uppercase tracking-[0.22em] text-amber">
               00:00 Hook Lab
@@ -62,6 +224,14 @@ function App() {
             Ten frameworks. One opening beat. Built for creators tuning
             retention before the timeline gets crowded.
           </div>
+          <button
+            type="button"
+            onClick={() => setIsHistoryOpen(true)}
+            aria-label="Open history"
+            className="grid h-11 w-11 place-items-center rounded-[4px] border border-white/10 text-muted transition-colors hover:border-cyan/50 hover:text-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan lg:self-start"
+          >
+            <Clock3 size={19} />
+          </button>
         </header>
 
         <section className="grid flex-1 gap-6 py-6 xl:grid-cols-[minmax(380px,0.82fr)_minmax(0,1.18fr)]">
@@ -72,15 +242,34 @@ function App() {
               void cutHooks();
             }}
           >
-            <ScriptInput
-              value={script}
-              onChange={setScript}
-              disabled={isLoading}
-            />
+            <div>
+              <ScriptInput
+                value={script}
+                onChange={setScript}
+                language={language}
+                disabled={isLoading}
+              />
+              {inputError ? (
+                <p className="mt-2 font-mono text-xs text-amber">
+                  {inputError}
+                </p>
+              ) : null}
+            </div>
             <PlatformSelector
               selectedPlatform={platform}
               onChange={setPlatform}
               disabled={isLoading}
+            />
+            <ControlsPanel
+              tone={tone}
+              audience={audience}
+              intensity={intensity}
+              language={language}
+              disabled={isLoading}
+              onToneChange={setTone}
+              onAudienceChange={setAudience}
+              onIntensityChange={setIntensity}
+              onLanguageChange={setLanguage}
             />
             <button
               type="submit"
@@ -106,12 +295,12 @@ function App() {
               </span>
             </div>
 
-            {error ? (
+            {surfaceError ? (
               <div
                 role="alert"
                 className="mb-5 rounded-md border border-amber/35 bg-amber/10 px-4 py-3 font-mono text-sm text-amber"
               >
-                {error}
+                {surfaceError}
               </div>
             ) : null}
 
@@ -121,22 +310,43 @@ function App() {
                   <SkeletonCard key={item} />
                 ))}
               </div>
-            ) : hooks.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-                {hooks.map((hook, index) => (
-                  <HookCard
-                    key={`${hook.framework}-${hook.text}`}
-                    hook={hook}
-                    index={index}
-                  />
-                ))}
-              </div>
+            ) : sortedHooks.length > 0 ? (
+              <>
+                <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                  {sortedHooks.map((hook, index) => (
+                    <HookCard
+                      key={hook.framework}
+                      hook={hook}
+                      index={index}
+                      platform={platform}
+                      canUndo={Boolean(previousHooks[hook.framework])}
+                      isRewriting={rewritingFramework === hook.framework}
+                      onRewrite={(direction) => {
+                        void rewriteCard(hook, direction);
+                      }}
+                      onUndo={() => undoRewrite(hook)}
+                    />
+                  ))}
+                </div>
+                {currentRequest ? (
+                  <ExportBar hooks={sortedHooks} request={currentRequest} />
+                ) : null}
+              </>
             ) : (
-              <EmptyState />
+              <EmptyState onSelectExample={selectExample} />
             )}
           </section>
         </section>
       </div>
+
+      <HistoryDrawer
+        isOpen={isHistoryOpen}
+        entries={entries}
+        onClose={() => setIsHistoryOpen(false)}
+        onRestore={restoreHistoryEntry}
+        onDelete={deleteEntry}
+        onClear={clearEntries}
+      />
     </main>
   );
 }
