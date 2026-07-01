@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 
-import type { GenerateHooksRequest, HookResult } from '../types/hooks';
+import type {
+  GenerateHooksRequest,
+  HookResult,
+  RoastCritique,
+  CompareHooksResponse,
+} from '../types/hooks';
 import {
   buildHooksCsv,
   buildHooksPlainText,
@@ -11,9 +16,11 @@ import {
 interface ExportBarProps {
   hooks: HookResult[];
   request: GenerateHooksRequest;
+  roast?: RoastCritique;
+  compare?: CompareHooksResponse;
 }
 
-export function ExportBar({ hooks, request }: ExportBarProps) {
+export function ExportBar({ hooks, request, roast, compare }: ExportBarProps) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -27,7 +34,11 @@ export function ExportBar({ hooks, request }: ExportBarProps) {
   }, [copied]);
 
   const copyAll = async (): Promise<void> => {
-    await navigator.clipboard.writeText(buildHooksPlainText(hooks));
+    if (compare) {
+      await navigator.clipboard.writeText(compare.improvedHook);
+    } else {
+      await navigator.clipboard.writeText(buildHooksPlainText(hooks));
+    }
     setCopied(true);
   };
 
@@ -38,7 +49,7 @@ export function ExportBar({ hooks, request }: ExportBarProps) {
   const downloadNotes = (): void => {
     downloadTextFile(
       'hook-lab-script-notes.txt',
-      buildScriptNotes(request, hooks),
+      buildScriptNotes(request, hooks, roast, compare),
       'text/plain',
     );
   };
@@ -52,15 +63,17 @@ export function ExportBar({ hooks, request }: ExportBarProps) {
         }}
         className="rounded-[4px] border border-white/10 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] text-muted transition-colors hover:border-cyan/60 hover:text-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
       >
-        {copied ? 'Copied ✓' : 'Copy All'}
+        {copied ? 'Copied ✓' : compare ? 'Copy Improved Hook' : 'Copy All'}
       </button>
-      <button
-        type="button"
-        onClick={downloadCsv}
-        className="rounded-[4px] border border-white/10 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] text-muted transition-colors hover:border-cyan/60 hover:text-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
-      >
-        Download CSV
-      </button>
+      {!compare ? (
+        <button
+          type="button"
+          onClick={downloadCsv}
+          className="rounded-[4px] border border-white/10 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] text-muted transition-colors hover:border-cyan/60 hover:text-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+        >
+          Download CSV
+        </button>
+      ) : null}
       <button
         type="button"
         onClick={downloadNotes}
