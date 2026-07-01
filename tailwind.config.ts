@@ -10,6 +10,7 @@ const config: Config = {
         amber: 'var(--accent-amber)',
         cyan: 'var(--accent-cyan)',
         primary: 'var(--text-primary)',
+        red: 'var(--accent-red)',
         muted: 'var(--text-muted)',
       },
       fontFamily: {
