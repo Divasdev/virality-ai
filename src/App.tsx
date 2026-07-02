@@ -1,3 +1,4 @@
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Clock3, Flame, Scissors } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -276,7 +277,9 @@ function App() {
   };
 
   return (
-    <main className="min-h-screen bg-bg text-primary">
+    <>
+      <SpeedInsights />
+      <main className="min-h-screen bg-bg text-primary">
       <div className="mx-auto flex min-h-screen w-full max-w-[1720px] flex-col px-4 py-5 sm:px-6 lg:px-8">
         <header className="grid gap-6 border-b border-white/10 pb-6 lg:grid-cols-[1fr_auto_auto] lg:items-end">
           <div>
@@ -485,6 +488,7 @@ function App() {
         onClear={clearEntries}
       />
     </main>
+    </>
   );
 }
 
