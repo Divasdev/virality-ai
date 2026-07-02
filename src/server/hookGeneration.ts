@@ -28,8 +28,8 @@ import {
   type RewriteHookResponse,
   type RoastCritique,
   type Tone,
-} from '../types/hooks';
-import { extractTopicAnchors, isGenerationGrounded } from './relevance';
+} from '../types/hooks.js';
+import { extractTopicAnchors, isGenerationGrounded } from './relevance.js';
 
 interface GeminiGenerateContentResponse {
   candidates?: Array<{

@@ -1,7 +1,7 @@
 import type {
   GenerateHooksRequest,
   GenerateHooksResponse,
-} from '../types/hooks';
+} from '../types/hooks.js';
 
 const stopWords = new Set([
   'about',

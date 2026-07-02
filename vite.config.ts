@@ -5,7 +5,8 @@ import { defineConfig, loadEnv, type Plugin } from 'vite';
 import {
   createGenerateHooksResponse,
   createRewriteHookResponse,
-} from './src/server/hookGeneration';
+  defaultGeminiModel,
+} from './src/server/hookGeneration.js';
 
 const readRequestBody = async (request: IncomingMessage): Promise<unknown> => {
   const chunks: Uint8Array[] = [];
@@ -38,15 +39,24 @@ const sendJson = (
 };
 
 const getApiKeysFromEnv = (): string[] =>
-  [
-    process.env.GEMINI_API_KEY,
-    process.env.GEMINI_API_KEY_2,
-    process.env.GEMINI_API_KEY_3,
-    process.env.GEMINI_API_KEY_4,
-    process.env.GEMINI_API_KEY_5,
-  ].filter((key): key is string => typeof key === 'string' && key.length > 0);
+  Array.from(
+    new Set(
+      [
+        process.env.GEMINI_API_KEY,
+        process.env.GEMINI_API_KEY_1,
+        process.env.GEMINI_API_KEY_2,
+        process.env.GEMINI_API_KEY_3,
+        process.env.GEMINI_API_KEY_4,
+        process.env.GEMINI_API_KEY_5,
+      ]
+        .map((key) => key?.trim())
+        .filter(
+          (key): key is string => typeof key === 'string' && key.length > 0,
+        ),
+    ),
+  );
 
-const localApiPlugin = (envApiKeys: string[]): Plugin => ({
+const localApiPlugin = (envApiKeys: string[], geminiModel: string): Plugin => ({
   name: 'virality-ai-local-api',
   configureServer(server) {
     const handleLocalApiRequest = async (
@@ -67,6 +77,7 @@ const localApiPlugin = (envApiKeys: string[]): Plugin => ({
           apiKeys,
           body,
           ip: request.socket.remoteAddress ?? 'unknown',
+          model: geminiModel,
         });
 
         sendJson(response, result.status, result.payload);
@@ -98,6 +109,7 @@ const localApiPlugin = (envApiKeys: string[]): Plugin => ({
           apiKeys,
           body,
           ip: request.socket.remoteAddress ?? 'unknown',
+          model: geminiModel,
         });
 
         sendJson(response, result.status, result.payload);
@@ -126,14 +138,19 @@ export default defineConfig(({ mode }) => {
 
   const apiKeys = [
     env.GEMINI_API_KEY,
+    env.GEMINI_API_KEY_1,
     env.GEMINI_API_KEY_2,
     env.GEMINI_API_KEY_3,
     env.GEMINI_API_KEY_4,
     env.GEMINI_API_KEY_5,
-  ].filter((key): key is string => typeof key === 'string' && key.length > 0);
+  ]
+    .map((key) => key?.trim())
+    .filter((key): key is string => typeof key === 'string' && key.length > 0);
 
   return {
-    plugins: [react(), localApiPlugin(apiKeys)],
+    plugins: [
+      react(),
+      localApiPlugin(apiKeys, env.GEMINI_MODEL?.trim() || defaultGeminiModel),
+    ],
   };
 });
-

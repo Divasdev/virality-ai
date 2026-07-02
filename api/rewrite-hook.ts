@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   createRewriteHookResponse,
   defaultGeminiModel,
-} from '../src/server/hookGeneration';
+} from '../src/server/hookGeneration.js';
 
 const setCorsHeaders = (response: VercelResponse): void => {
   response.setHeader('Access-Control-Allow-Origin', '*');

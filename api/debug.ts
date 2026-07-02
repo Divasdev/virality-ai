@@ -2,7 +2,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { defaultGeminiModel } from '../src/server/hookGeneration';
+import { defaultGeminiModel } from '../src/server/hookGeneration.js';
 
 const keyNames = [
   'GEMINI_API_KEY',

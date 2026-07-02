@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   createGenerateHooksResponse,
   defaultGeminiModel,
-} from '../src/server/hookGeneration';
+} from '../src/server/hookGeneration.js';
 
 export const maxDuration = 60;
 
