@@ -1,5 +1,6 @@
 import { Clock3, Flame, Scissors } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 
 import { ComparisonSection } from './components/ComparisonSection';
 import { CompareCard } from './components/CompareCard';
@@ -483,6 +484,7 @@ function App() {
         onDelete={deleteEntry}
         onClear={clearEntries}
       />
+      <Analytics />
     </main>
   );
 }
