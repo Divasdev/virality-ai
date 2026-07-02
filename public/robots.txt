@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://hooklab.example.com/sitemap.xml
+Sitemap: https://virality-ai.example.com/sitemap.xml

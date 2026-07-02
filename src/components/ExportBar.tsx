@@ -43,12 +43,12 @@ export function ExportBar({ hooks, request, roast, compare }: ExportBarProps) {
   };
 
   const downloadCsv = (): void => {
-    downloadTextFile('hook-lab-hooks.csv', buildHooksCsv(hooks), 'text/csv');
+    downloadTextFile('virality-ai-hooks.csv', buildHooksCsv(hooks), 'text/csv');
   };
 
   const downloadNotes = (): void => {
     downloadTextFile(
-      'hook-lab-script-notes.txt',
+      'virality-ai-script-notes.txt',
       buildScriptNotes(request, hooks, roast, compare),
       'text/plain',
     );

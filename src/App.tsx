@@ -17,7 +17,7 @@ import { type ScriptTemplate } from './data/templates';
 import { useHistory } from './hooks/useHistory';
 import {
   generateHooks,
-  HookLabApiError,
+  ViralityAiApiError,
   rewriteHook,
 } from './services/hooksApi';
 import type {
@@ -107,7 +107,7 @@ function App() {
   });
 
   const handleError = (caughtError: unknown): void => {
-    if (caughtError instanceof HookLabApiError) {
+    if (caughtError instanceof ViralityAiApiError) {
       if (caughtError.status === 400) {
         setInputError(caughtError.message);
         return;
@@ -281,7 +281,7 @@ function App() {
         <header className="grid gap-6 border-b border-white/10 pb-6 lg:grid-cols-[1fr_auto_auto] lg:items-end">
           <div>
             <p className="mb-3 font-mono text-xs uppercase tracking-[0.22em] text-amber">
-              00:00 Hook Lab
+              00:00 Virality AI
             </p>
             <h1 className="max-w-4xl font-display text-[clamp(2.75rem,8vw,6.75rem)] font-semibold leading-[0.9] tracking-normal">
               Cut the first few seconds before the edit.

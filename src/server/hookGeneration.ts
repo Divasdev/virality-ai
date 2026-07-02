@@ -547,7 +547,7 @@ const languageDirections: Record<HookLanguage, string> = {
 
 const buildGenerateSystemPrompt = (request: GenerateHooksRequest): string =>
   `
-You are Hook Lab, a senior short-form video editor and retention strategist.
+You are Virality AI, a senior short-form video editor and retention strategist.
 Your job is to help the creator decide which first-${request.hookWindow}-seconds hook to use.
 
 CRITICAL SOURCE-GROUNDING RULE:
@@ -628,7 +628,7 @@ Preserve the same topic and facts. Do not change the niche.
 
 const buildRewriteSystemPrompt = (request: RewriteHookRequest): string =>
   `
-You are Hook Lab, a senior short-form video editor and retention strategist.
+You are Virality AI, a senior short-form video editor and retention strategist.
 Rewrite one existing ${request.framework} hook for ${request.platform}.
 
 Direction: ${request.direction}
@@ -658,7 +658,7 @@ Rules:
 
 const buildRoastSystemPrompt = (request: GenerateHooksRequest): string =>
   `
-You are Hook Lab, a senior short-form video editor and retention strategist.
+You are Virality AI, a senior short-form video editor and retention strategist.
 You are in ROAST mode. The user has pasted an existing hook that they want critiqued.
 
 First, produce a brutally honest but constructive critique of their hook.
@@ -759,7 +759,7 @@ Preserve the same topic and facts. Do not change the niche.
 
 const buildCompareSystemPrompt = (request: GenerateHooksRequest): string =>
   `
-You are Hook Lab, a senior short-form video editor and retention strategist.
+You are Virality AI, a senior short-form video editor and retention strategist.
 You are in COMPARE mode. The user has provided two hooks: Hook A and Hook B.
 Your job is to objectively analyze them and declare a winner.
 

@@ -8,7 +8,7 @@ import type {
   CompareHooksResponse,
 } from '../types/hooks';
 
-const historyKey = 'hooklab_history';
+const historyKey = 'virality_ai_history';
 const maxHistoryEntries = 20;
 
 const isHistoryEntry = (value: unknown): value is HistoryEntry => {

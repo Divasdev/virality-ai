@@ -36,7 +36,7 @@ export function TemplateLibrary({
             Template Library
           </h2>
           <p className="text-sm text-muted">
-            Try Hook Lab instantly with realistic creator scripts.
+            Try Virality AI instantly with realistic creator scripts.
           </p>
         </div>
       </div>

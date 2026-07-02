@@ -38,7 +38,7 @@ const sendJson = (
 };
 
 const localApiPlugin = (geminiApiKey?: string): Plugin => ({
-  name: 'hook-lab-local-api',
+  name: 'virality-ai-local-api',
   configureServer(server) {
     const handleLocalApiRequest = async (
       request: IncomingMessage,

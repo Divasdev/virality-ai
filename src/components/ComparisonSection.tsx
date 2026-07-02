@@ -11,7 +11,7 @@ const chatGptHooks = [
   'What if I told you there was a better way?',
 ];
 
-const hookLabExample = {
+const viralityAiExample = {
   framework: 'CURIOSITY GAP' as const,
   text: 'Day 60 almost broke me. Day 90 changed everything.',
   why: 'Drops the viewer into a crisis mid-journey, creating a gap between the low point and the payoff that demands resolution.',
@@ -37,7 +37,7 @@ export function ComparisonSection() {
   }, [copied]);
 
   const copyHook = async (): Promise<void> => {
-    await navigator.clipboard.writeText(hookLabExample.text);
+    await navigator.clipboard.writeText(viralityAiExample.text);
     setCopied(true);
   };
 
@@ -77,7 +77,7 @@ export function ComparisonSection() {
           </div>
         </div>
 
-        {/* Hook Lab card */}
+        {/* Virality AI card */}
         <article
           className="relative flex flex-col rounded-md border border-white/10 bg-surface p-5 shadow-panel"
           style={{
@@ -91,7 +91,7 @@ export function ComparisonSection() {
                 Best for YouTube Shorts
               </p>
               <p className="font-mono text-xs font-semibold uppercase tracking-[0.16em] text-amber">
-                Hook Lab
+                Virality AI
               </p>
               <p className="mt-1 text-[13px] text-muted/70">
                 Purpose-built creator workflow
@@ -111,20 +111,20 @@ export function ComparisonSection() {
 
           <div className="mb-2">
             <span className="inline-flex rounded-[3px] border border-amber/30 bg-amber/10 px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-amber">
-              {hookLabExample.framework}
+              {viralityAiExample.framework}
             </span>
           </div>
 
           <h3 className="pr-2 font-display text-[clamp(1.15rem,3vw,1.45rem)] font-semibold leading-[1.12] text-primary">
-            {hookLabExample.text}
+            {viralityAiExample.text}
           </h3>
           <p className="mt-3 text-sm italic leading-6 text-muted">
             <span className="font-semibold text-primary/80">Why it works:</span>{' '}
-            {hookLabExample.why}
+            {viralityAiExample.why}
           </p>
 
           <div className="mt-5">
-            <GradeBreakdown scores={hookLabExample.scores} />
+            <GradeBreakdown scores={viralityAiExample.scores} />
           </div>
         </article>
       </div>
