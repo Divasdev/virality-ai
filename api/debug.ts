@@ -99,7 +99,7 @@ export default async function handler(
           audience: 'Creators',
           intensity: 'Sharp',
           language: 'English',
-          hookWindow: 3,
+          hookWindow: 5,
         }
       });
       
