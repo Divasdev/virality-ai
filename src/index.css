@@ -5,13 +5,16 @@
 @tailwind utilities;
 
 :root {
-  --bg: #15171c;
-  --surface: #1e2128;
-  --accent-amber: #ff8a3d;
-  --accent-cyan: #4dd8e8;
-  --text-primary: #f2f0ea;
-  --accent-red: #ef4444;
-  --text-muted: #787c87;
+  --bg: #08090B;
+  --surface: #111318;
+  --surface-elevated: #171A21;
+  --border: #2A2F38;
+  --text-primary: #E8EAED;
+  --text-secondary: #A5ADB8;
+  --text-muted: #707887;
+  --accent-amber: #D99A2B;
+  --accent-cyan: #3FBCCB;
+  --accent-error: #EF6B6B;
   color-scheme: dark;
   font-family: Inter, system-ui, sans-serif;
   background: var(--bg);
@@ -31,8 +34,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
     var(--bg);
   background-size: 48px 48px;
   color: var(--text-primary);
@@ -45,12 +48,17 @@ textarea {
   font: inherit;
 }
 
+button:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 100ms;
+}
+
 textarea::selection,
 h1::selection,
 h2::selection,
 p::selection,
 span::selection {
-  background: rgba(77, 216, 232, 0.28);
+  background: rgba(63, 188, 203, 0.24);
 }
 
 @media (prefers-reduced-motion: reduce) {
