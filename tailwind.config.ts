@@ -7,11 +7,14 @@ const config: Config = {
       colors: {
         bg: 'var(--bg)',
         surface: 'var(--surface)',
+        'surface-elevated': 'var(--surface-elevated)',
         amber: 'var(--accent-amber)',
         cyan: 'var(--accent-cyan)',
         primary: 'var(--text-primary)',
-        red: 'var(--accent-red)',
+        secondary: 'var(--text-secondary)',
+        red: 'var(--accent-error)',
         muted: 'var(--text-muted)',
+        border: 'var(--border)',
       },
       fontFamily: {
         display: ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
@@ -19,9 +22,9 @@ const config: Config = {
         mono: ['IBM Plex Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       boxShadow: {
-        panel: '0 18px 54px rgba(0, 0, 0, 0.24)',
-        cyan: '0 0 18px rgba(77, 216, 232, 0.18)',
-        amber: '0 0 18px rgba(255, 138, 61, 0.18)',
+        panel: '0 18px 54px rgba(0, 0, 0, 0.3)',
+        cyan: '0 0 12px rgba(63, 188, 203, 0.08)',
+        amber: '0 0 12px rgba(217, 154, 43, 0.08)',
       },
       keyframes: {
         cardIn: {
@@ -36,11 +39,16 @@ const config: Config = {
           '0%, 100%': { opacity: '0.42' },
           '50%': { opacity: '0.82' },
         },
+        triggerPulse: {
+          '0%, 100%': { transform: 'scale(1)', boxShadow: '0 0 12px rgba(217, 154, 43, 0.08)' },
+          '50%': { transform: 'scale(1.04)', boxShadow: '0 0 24px rgba(217, 154, 43, 0.4)' },
+        },
       },
       animation: {
         cardIn: 'cardIn 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both',
         drawLine: 'drawLine 780ms cubic-bezier(0.22, 1, 0.36, 1) both',
         skeletonPulse: 'skeletonPulse 1.45s ease-in-out infinite',
+        triggerPulse: 'triggerPulse 600ms ease-in-out 2',
       },
     },
   },
