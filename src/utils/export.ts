@@ -88,7 +88,7 @@ ${compare.improvedHook}
 `;
   }
 
-  return `VIRALITY AI EXPORT
+  return `HOOKLAB.AI EXPORT
 Mode: ${modeLabel}
 Script: ${request.script.slice(0, 100)}${request.script.length > 100 ? '...' : ''}
 Platform: ${request.platform} | Hook Window: ${request.hookWindow}s | Tone: ${request.tone} | Audience: ${request.audience}
