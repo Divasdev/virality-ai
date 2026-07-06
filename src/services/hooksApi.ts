@@ -10,13 +10,13 @@ import type {
   CompareAnalysis,
 } from '../types/hooks';
 
-export class ViralityAiApiError extends Error {
+export class HookLabApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
   ) {
     super(message);
-    this.name = 'ViralityAiApiError';
+    this.name = 'HookLabApiError';
   }
 }
 
@@ -164,26 +164,26 @@ const readJson = async (response: Response): Promise<unknown> => {
   try {
     return await response.json();
   } catch {
-    throw new ViralityAiApiError("Couldn't read the hook cut. Try again.", 500);
+    throw new HookLabApiError("Couldn't read the hook cut. Try again.", 500);
   }
 };
 
 const throwApiError = (status: number, payload: unknown): never => {
   if (status === 429) {
-    throw new ViralityAiApiError(
+    throw new HookLabApiError(
       "Slow down — you've hit the rate limit. Try again in a bit.",
       status,
     );
   }
 
   if (status === 400) {
-    throw new ViralityAiApiError(
+    throw new HookLabApiError(
       parseErrorMessage(payload) ?? 'Check the input and try again.',
       status,
     );
   }
 
-  throw new ViralityAiApiError(
+  throw new HookLabApiError(
     'Something went wrong on our end. Try again.',
     status,
   );
@@ -223,7 +223,7 @@ export const rewriteHook = async (
   }
 
   if (!isRewriteHookResponse(payload)) {
-    throw new ViralityAiApiError(
+    throw new HookLabApiError(
       'Something went wrong on our end. Try again.',
       500,
     );
