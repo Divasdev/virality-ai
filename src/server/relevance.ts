@@ -116,6 +116,7 @@ const sourceAllowsCreatorTerms = (script: string): boolean => {
 const extractNumericClaims = (text: string): Set<string> =>
   new Set((normalize(text).match(numericClaimPattern) ?? []).map(normalize));
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const hasUnsupportedNumericClaim = (
   request: GenerateHooksRequest,
   hookText: string,
@@ -159,10 +160,12 @@ export const isGenerationGrounded = (
 
   const minimumUniqueAnchorCoverage = Math.min(3, anchors.length);
   const usedAnchors = new Set<string>();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const allowCreatorTerms = sourceAllowsCreatorTerms(request.script);
 
   for (const hook of response.hooks) {
     const hookText = `${hook.text} ${hook.why}`;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const anchorMatches = countAnchorMatches(hookText, anchors);
     const normalizedHookText = normalize(hookText);
 
